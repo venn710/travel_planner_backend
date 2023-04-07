@@ -2,6 +2,7 @@ const nodemailer = require('nodemailer');
 const uuid = require('uuid');
 const jsonwebtoken = require('jsonwebtoken');
 let otps = {};
+const { findAndSaveRegisterDetails } = require('../utils/customer-type-utils');
 
 const requestOtp = async (req, res) => {
     var transporter = nodemailer.createTransport(
@@ -16,8 +17,6 @@ const requestOtp = async (req, res) => {
         }
     );
     let email = req.params.email;
-    console.log("came in loginUsingOtp");
-    console.log(req.params.email);
     let digits = '0123456789';
     let limit = 6;
     let otp = ''
@@ -47,26 +46,16 @@ const requestOtp = async (req, res) => {
     });
 
 }
-const validateOtp = async (req, res, next) => {
-    let receivedBody = req.body;
+const registerVerifyOtp = async (req, res, next) => {
+    receivedBody = req.body;
     let receivedOtp = receivedBody['otp'];
-    let email = receivedBody['email']
+    let email = receivedBody['email'];
     console.log(otps)
     if (otps[email] == receivedOtp) {
-        let data = {
-            'email': email,
-            'userId': uuid.v4()
-        };
-        console.log(data);
-        const token = jsonwebtoken.sign(data, process.env.JWT_SECRET_KEY, {
-            'expiresIn': "3000s"
-        })
-        res.status(200).json({
-            'message': "OTP sent Successfully",
-            'token': token
-        })
+        var generatedUserId = uuid.v4();
+        return findAndSaveRegisterDetails(req, res, generatedUserId);
     } else {
         res.status(400).send('INVALID OTP')
     }
 }
-module.exports = { requestOtp, validateOtp }
+module.exports = { requestOtp, registerVerifyOtp}
